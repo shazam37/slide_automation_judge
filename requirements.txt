@@ -1,0 +1,22 @@
+# judge_module requirements
+# Minimal dependencies — no slide-crafter pipeline internals required.
+
+# LangChain core
+langchain-core>=0.3.0
+
+# LLM providers — install the one(s) you use:
+langchain-anthropic>=0.3.0       # for ChatAnthropic (direct API)
+langchain-aws>=0.2.0             # for ChatBedrockConverse (AWS Bedrock)
+# langchain-openai>=0.2.0        # uncomment if using OpenAI
+
+# Structured output extraction (robust JSON repair)
+trustcall>=0.0.30
+
+# Data validation
+pydantic>=2.0.0
+
+# Testing
+pytest>=8.0.0
+
+# Optional: LangSmith tracing (set LANGSMITH_API_KEY env var to enable)
+langsmith>=0.1.0

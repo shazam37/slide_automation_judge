@@ -1,0 +1,39 @@
+{
+  "verdict": "rejected",
+  "layout_option_id": "OPT-1-REVISED",
+  "layout_description": "Option: OPT-1-REVISED\nSlide description: TWO-COLUMN LAYOUT with 2:1 width allocation (left column dominant). The slide uses a clean, professional structure with the title at the top, followed by two side-by-side content containers that fill the remaining vertical space. The left column (Context) receives approximately 65% of the horizontal space to accommodate dense bullet content, while the right column (Objectives) receives approximately 30% for a shorter numbered list. A small gutter (5%) separates the columns. Both columns share identical top and bottom edges, creating strong horizontal alignment. The layout maximizes vertical space utilization \u2014 no large empty zones at the bottom. Dashed separator lines between bullet sections provide visual rhythm without consuming vertical space. This revision addresses the judge's critique by increasing body font size in both columns to fill at least 65% of container inner height, with proportional increases to line-height and vertical spacing to maintain readability and visual balance.\n\nBlueprint:\n  Orientation: left-to-right\n  Regions: 2\n  Allocation: [0.65, 0.3]\n\nContainers:\n  C0 (LEFT COLUMN \u2014 Context): The left column occupies approximately 65% of the slide width and fills the full vertical space from below the title to the slide bottom margin. This container holds dense bullet content organized into multiple sections. The content is structured as a vertical stack of bullet sections, each separated by thin dashed grey horizontal separator lines spanning the full column width. The first section contains two major bullets (2024/2025 stand-up and 2026 scaling), each with multiple sub-bullets. Subsequent sections contain single major bullets with sub-bullets. All bullet points use brand-color circle markers (small, proportional to body text height). Text is left-aligned with a small left inset from the bullet markers. FONT SIZE DIRECTIVE: Increase body font size from the previous attempt toward the 18pt ceiling until text fills at least 65% of the container inner height. Apply proportional increases to line-height (1.4\u20131.5\u00d7 font size) and vertical spacing between bullet sections to maintain readability. Bold key phrases within bullets (e.g., 'Liquidity Solutions business', 'ATLAS', 'portfolio management capability', '$250-300M', '2024/2025', '2026', 'technology solution', 'workflow tool', 'Borrower one-pagers', 'portfolio management capability', 'ATLAS Phase 1', 'Phase 2', 'funding required'). The container has no visible border or background fill \u2014 content sits directly on the white slide background. Vertical spacing between bullet sections is minimal (dense content), with dashed separators providing visual rhythm. All row sections use equal flexGrow to distribute content evenly across the available vertical space, preventing top-stacking. The container's top edge aligns exactly with the top edge of the right column (C1). The bottom edge aligns exactly with the bottom edge of C1.\n  C1 (RIGHT COLUMN \u2014 Objectives): The right column occupies approximately 30% of the slide width and shares identical top and bottom edges with the left column (C0). This container holds a numbered list of three objectives. The structure is a vertical stack with a bold section header ('Objectives') at the top in brand accent color, followed by three numbered items. Each numbered item uses a small brand-color filled square badge (small corner radius, white bold number centered inside) positioned at the left edge of its row, with the objective text left-aligned starting after the badge. The three items are: (1) Review outcomes from ATLAS Phase 1 and discussion what will be delivered in Phase 2 [10 mins], (2) Demo ATLAS Phase 1 solution e.g., workflow tool including Borrower one-pagers [10 mins], (3) Recall the value creation potential of Liquidity Solutions business and discuss funding requirements for ATLAS Phase 2 [10 mins]. Thin dashed grey horizontal separator lines span the full column width between consecutive numbered items (not after the last item). FONT SIZE DIRECTIVE: Increase body font size from the previous attempt toward the 18pt ceiling until text fills at least 65% of the container inner height. This is the SAME font size as C0 body text to preserve within-slide uniformity (Rule C6). Apply proportional increases to line-height (1.4\u20131.5\u00d7 font size) and vertical spacing between numbered items to maintain readability and visual balance. The numbered badges scale proportionally to the new font size \u2014 they remain small guides, not focal points. The container has no visible border or background fill. Vertical spacing is generous relative to the left column (less content density), with flexGrow distributing the three items evenly across the available vertical space. The numbered badges are vertically centered within their respective row bands. The section header ('Objectives') uses a slightly larger font size than body text (or same size with bold weight) in brand accent color.\n  SC-BOTTOM (DECORATIVE BACKGROUND LAYER): Inactive. The slide is well-filled by the two content columns (C0 and C1), which together occupy approximately 95% of the horizontal space and fill the full vertical space below the title. No decorative background layer is needed \u2014 adding one would not provide visual grouping benefit and would violate the principle of purposeful design. The white slide background is sufficient.\n  SC-TOP (OVERLAY CONNECTOR LAYER): Inactive. This slide contains two independent content columns with no cross-container relationships, connectors, or overlay elements. All content sits within the two columns. No top-layer execution is required.",
+  "expected_violations": [
+    "container_fill_ratio",
+    "container_fill_ratio",
+    "text_rendering"
+  ],
+  "_reference_violations": [
+    {
+      "rule": "container_fill_ratio",
+      "severity": "critical",
+      "description": "C0 (Context): Text block occupies approximately 35-40% of container inner height \u2014 severely under-filled. A large empty white band (more than half the container height) exists below the last bullet point.",
+      "affected_containers": [
+        "C0"
+      ]
+    },
+    {
+      "rule": "container_fill_ratio",
+      "severity": "critical",
+      "description": "C1 (Objectives): Text block occupies approximately 30-35% of container inner height \u2014 severely under-filled. A large empty white band (approximately two-thirds of the container height) exists below the third numbered item.",
+      "affected_containers": [
+        "C1"
+      ]
+    },
+    {
+      "rule": "text_rendering",
+      "severity": "major",
+      "description": "C0 (Context): Text rendering error visible in the middle section where multiple lines of text appear overlapped/garbled (around the area with 'Rounding out the team' and 'Maturing the infrastructure' bullets). Text is illegible in this region.",
+      "affected_containers": [
+        "C0"
+      ]
+    }
+  ],
+  "_reference_layout_score": 2,
+  "_reference_content_fidelity_score": 5,
+  "_reference_critique_target": "svg_sketcher"
+}

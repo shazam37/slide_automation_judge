@@ -1,0 +1,42 @@
+{
+  "verdict": "rejected",
+  "layout_option_id": "OPT-1",
+  "layout_description": "Option: OPT-1\nSlide description: TWO-COLUMN FINANCIAL DATA LAYOUT with equal-width side-by-side tables spanning the full slide width. The slide uses a top-to-bottom orientation with a compact title area (\u226415% height) followed by a unified content zone containing two independent financial tables arranged horizontally. Each table occupies approximately 47% of slide width with a 6% gutter between them. The layout maximizes vertical space utilization \u2014 both tables extend from immediately below the title to near the bottom margin, filling approximately 67% of slide height. No outer container is used; tables sit directly on the white slide background. The design follows Section 8 Option A (Standard Financial Table) from the design guidelines, with solid filled header bars, dashed grey row separators, and merged region cells. The spatial structure is: title at top \u2192 two equal-peer tables side-by-side filling remaining space \u2192 bottom margin. Reading flow is left-to-right across the two tables, then top-to-bottom within each table. Visual weight is evenly distributed between the two tables (50/50 split). The layout is intentionally symmetric, with both tables receiving identical visual treatment and proportional space allocation.\n\nBlueprint:\n  Orientation: left-to-right\n  Regions: 3\n  Allocation: [0.15, 0.425, 0.425]\n\nContainers:\n  C0 (LEFT TABLE \u2014 Bookings 2026 (Net)): Left-side financial table occupying the left half of the content zone (approximately 38.5% of slide width). Positioned with left edge at 3% from slide left margin, top edge at 13.5% from slide top. Height extends 67% of slide height, filling the vertical space between title and bottom margin. This table contains booking data organized by Region (NA, Intl) with customer breakdowns and monthly distribution (Q1, Jan, Feb, Mar columns). The table uses Section 8 Option A (Standard Financial Table) visual treatment: solid filled header row spanning full table width with brand primary fill and white bold text left-aligned; sub-header row with column labels (Region, Customer, Country, Q1, Jan, Feb, Mar) using light brand fill; data rows with white background and thin dashed grey horizontal separators between rows; merged region cells (NA, Intl) with light grey fill and bold text vertically centered; subtotal rows (Total NA, Total Intl, Total) with bold text. All vertical cell borders removed for clean appearance. Column widths: Region/Customer/Country columns sized to fit text without wrapping (approximately 60% of table width combined), numeric columns (Q1, Jan, Feb, Mar) share remaining 40% equally. Highlighted cells in the source (green fills on specific Jan/Feb/Mar values) preserve their exact highlight colors as accent elements. Font: body font throughout, bold for headers and region labels, regular weight for data cells. Text alignment: left-aligned for text columns, right-aligned for numeric columns. The table fills its allocated container space completely with no excess whitespace \u2014 content density is high (18 data rows plus headers), so padding is minimal and dashed separators provide visual rhythm without consuming vertical space (per Beauty Principle 0.1).\n  C1 (RIGHT TABLE \u2014 Revenues 2026): Right-side financial table occupying the right half of the content zone (approximately 47% of slide width). Positioned with left edge at 49.5% from slide left margin, top edge at 13.5% from slide top (exactly aligned with C0 top edge per Rule B2). Height extends 67% of slide height, matching C0 height exactly. This table contains revenue data organized by Region (NA, Intl) with customer/country breakdowns and monthly distribution (Q1, Jan, Feb, Mar columns). The table uses identical visual treatment to C0 (Section 8 Option A): solid filled header row with brand primary fill and white bold text; sub-header row with light brand fill; data rows with white background and thin dashed grey horizontal separators; merged region cells with light grey fill and bold text; subtotal rows with bold text. All vertical cell borders removed. Column widths: Region/Customer/Country columns sized to fit text (approximately 55% of table width), numeric columns share remaining 45% equally. Highlighted cells (green fill on specific revenue values, notably the large green cell for Albert Einstein in Mar column showing 781) preserve exact source colors. Font: body font throughout, bold for headers and region labels, regular for data. Text alignment: left for text columns, right for numeric columns. Content density is high (similar row count to C0), so minimal padding with dashed separators between every data row. The two tables (C0 and C1) are equal-peer containers with identical top_pct, height_pct, and visual treatment, creating a balanced symmetric layout. Row bands within each table align horizontally across the slide where region groupings correspond (NA section, Intl section, totals), reinforcing the unified two-table composition. The title text visible in the source image ('Q1 by month' and 'Design to be improved') is slide-level title content, not part of this container.\n  SC-BOTTOM (DECORATIVE BACKGROUND LAYER): Inactive. The slide is well-filled by the two financial tables (C0 and C1), which together cover approximately 85% of the usable slide area (2 tables \u00d7 ~40% width \u00d7 67% height). No visual grouping benefit would be gained by adding a background layer, and doing so would risk violating the accent color budget (Rule C3). The tables sit directly on the white slide background with clean separation provided by the gutter between them. No decorative layer is needed.\n  SC-TOP (OVERLAY CONNECTOR LAYER): Inactive. No cross-container connectors, arrows, or overlay elements are present in the source content. The two tables (C0 and C1) are independent data presentations with no visual links between them. No top-layer execution is required.",
+  "expected_violations": [
+    "svg_generation_failure",
+    "space_utilization",
+    "content_fidelity_table"
+  ],
+  "_reference_violations": [
+    {
+      "rule": "svg_generation_failure",
+      "severity": "critical",
+      "description": "SVG generation failed completely. The sketch image shows only the error message 'SVG generation failed' on a blank canvas with no rendered content.",
+      "affected_containers": [
+        "C0",
+        "C1"
+      ]
+    },
+    {
+      "rule": "space_utilization",
+      "severity": "critical",
+      "description": "Total content area is 0% of slide area due to generation failure. Required minimum is 60%.",
+      "affected_containers": [
+        "C0",
+        "C1"
+      ]
+    },
+    {
+      "rule": "content_fidelity_table",
+      "severity": "critical",
+      "description": "Both financial tables are completely missing. C0 (Bookings table) should contain 18+ data rows with 7 columns (Region, Customer, Country, Q1, Jan, Feb, Mar). C1 (Revenues table) should contain similar row count with same column structure. Zero rows and zero columns are present.",
+      "affected_containers": [
+        "C0",
+        "C1"
+      ]
+    }
+  ],
+  "_reference_layout_score": 1,
+  "_reference_content_fidelity_score": 1,
+  "_reference_critique_target": "svg_sketcher"
+}
