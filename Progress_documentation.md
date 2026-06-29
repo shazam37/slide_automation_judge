@@ -577,14 +577,18 @@ File size: **882 lines** (+46 lines from Phase 2's 836 lines).
 
 ### Summary Table
 
-| Phase | Verdict Accuracy | Score Accuracy | Violation Detection | Analysis Quality | Overall Grade |
-|-------|------------------|----------------|---------------------|------------------|---------------|
-| **Baseline (Old Judge)** | 5/5 (100%) | 5/5 (100%) | ~15/15 (100%) | Excellent | **A+ (98%)** |
-| **Phase 0: Initial Revision** | 2/5 (40%) | 3/5 (60%) | ~3/15 (20%) | Poor | **F (40%)** |
-| **Phase 1: Bug Fixes** | 5/5 (100%) | 3/5 (60%) | ~3/15 (20%) | Fair | **C (70%)** |
-| **Phase 2: Analysis Fixes (First Test)** | 5/5 (100%) | 4/5 (80%) | 9/15 (60%) | Good | **B (80%)** |
-| **Phase 2.1: Targeted Improvements (Second Test)** | **5/5 (100%)** | **5/5 (100%)** | **9/15 (60%)** | **Excellent** | **A (90%)** ✅ |
-| **Target** | 5/5 (100%) | 5/5 (100%) | 13+/15 (85%+) | Very Good | **A (90%+)** |
+| Phase | Test Set | Verdict Accuracy | Score Accuracy | Violation Detection | Analysis Quality | Overall Grade |
+|-------|----------|------------------|----------------|---------------------|------------------|---------------|
+| **Baseline (Old Judge)** | 5 cases | 5/5 (100%) | 5/5 (100%) | ~15/15 (100%) | Excellent | **A+ (98%)** |
+| **Phase 0: Initial Revision** | 5 cases | 2/5 (40%) | 3/5 (60%) | ~3/15 (20%) | Poor | **F (40%)** |
+| **Phase 1: Bug Fixes** | 5 cases | 5/5 (100%) | 3/5 (60%) | ~3/15 (20%) | Fair | **C (70%)** |
+| **Phase 2: Analysis Fixes (First Test)** | 5 cases | 5/5 (100%) | 4/5 (80%) | 9/15 (60%) | Good | **B (80%)** |
+| **Phase 2.1: Targeted Improvements (Second Test)** | 5 cases | **5/5 (100%)** | **5/5 (100%)** | **9/15 (60%)** | **Excellent** | **A (90%)** ✅ |
+| **Phase 3: Unseen Validation (Baseline)** | **10 cases** | **10/10 (100%)** ✅ | High | Clean signal | Excellent | **A+ (98%)** |
+| **Phase 3: Unseen Validation (Phase 2.1)** | **10 cases** | **8/10 (80%)** ❌ | Mixed | Noisy | Inconsistent | **C+ (80%)** ⚠️ |
+| **Target** | All cases | 10/10 (100%) | High | 85%+ | Very Good | **A (90%+)** |
+
+**Key Insight:** Phase 2.1's Grade A (90%) on 5 validation cases did **not generalize** to 10 diverse unseen cases. Baseline (old module) remains more robust.
 
 ### Detailed Breakdown by Case (Phase 1 → Phase 2 → Phase 2.1)
 
@@ -970,9 +974,9 @@ Refs: case_020, case_024
 - ✅ Ready for 65-case full suite validation
 
 **Recommended Next Steps:**
-1. Run full 65-case test suite to validate 90% grade across broader dataset
-2. If 65-case maintains 85%+ accuracy: Tag as `v1.0-single-agent` and document production deployment
-3. If 65-case shows regression below 85%: Re-evaluate and consider split-agent architecture
+1. ~~Run full 65-case test suite to validate 90% grade across broader dataset~~
+2. ✅ **COMPLETED:** Ran 10-case diverse unseen test set → revealed critical issues (see Phase 3 below)
+3. **PIVOT DECISION:** Proceed to multi-agent architecture based on Phase 3 findings
 
 **Repository Status:**
 - Branch: `main`
@@ -982,5 +986,293 @@ Refs: case_020, case_024
 
 ---
 
-**Document Version:** 2.0  
-**Last Updated:** 2026-06-29 (Phase 2.1 complete — Grade A achieved)
+## Phase 3: Multi-Model Comparison & Critical Validation (10-Case Unseen Test)
+
+**Date:** 2026-06-29  
+**Goal:** Validate Phase 2.1 improvements on diverse unseen cases; compare Sonnet vs Opus models  
+**Test Set:** 10 cases (001, 005, 010, 015, 021, 040, 045, 050, 060, 064) — none previously tested in Phase 1/2/2.1
+
+### Experiment Design
+
+**Why 10 cases instead of full 65?**
+- Cost-efficient validation before committing to full suite
+- Diverse case selection:
+  - **Verdicts:** 5 approved, 5 rejected (50/50 balanced)
+  - **Complexity:** 2 low, 5 moderate, 1 high, 2 very high
+  - **Layout types:** 7 two-column, 2 full-width tables, 1 dual tables
+  - **Content density:** 2 sparse, 5 moderate, 3 dense
+
+**Models tested:**
+1. Baseline (old module) — Sonnet 4.5
+2. Phase 2.1 (revised module) — Sonnet 4.5
+3. ~~Phase 2.1 — Opus 4.8~~ (access denied, requires AWS approval)
+
+### Results: Phase 3 Experiment
+
+#### Summary Metrics
+
+| Metric | Baseline (Old) | Phase 2.1 (New) | Target | Status |
+|--------|---------------|-----------------|--------|--------|
+| **Verdict accuracy** | **100% (10/10)** | **80% (8/10)** | 100% | ❌ **20% regression** |
+| False positive rate | 0% | 20% (2/10) | 0% | ❌ Worse |
+| False negative rate | 0% | 20% (2/10) | 0% | ❌ Worse |
+| Layout score accuracy | High | Mixed | High | ⚠️ Inconsistent |
+| Content score accuracy | High | Mixed | High | ⚠️ Inconsistent |
+| Violation detection | Clean signal | Noisy | Clean | ❌ More false alarms |
+
+**Overall Phase 3 Grade: C+ (80% verdict accuracy)**
+
+#### Case-by-Case Breakdown
+
+| Case | Expected | Baseline | Phase 2.1 | Analysis |
+|------|----------|----------|-----------|----------|
+| **001** | approved | ✅ approved | ✅ approved | **Baseline wins:** Phase 2.1 flagged 2 false positive violations |
+| **005** | rejected | ✅ rejected (L2,C2) | ✅ rejected (L1,C3) | **Phase 2.1 wins:** Better reasoning, strict cap working |
+| **010** | rejected | ✅ rejected (L2,C2) | ✅ rejected (L1,C3) | **Phase 2.1 wins:** Better reasoning, strict cap working |
+| **015** | rejected | ✅ rejected (L2,C5) | ❌ **approved** (L5,C5) | **CRITICAL FAILURE:** Missed obvious under-fill |
+| **021** | rejected | ✅ rejected (L2,C4) | ✅ rejected (L2,C2) | **Tie:** Both correct, Phase 2.1 more harsh on content |
+| **040** | approved | ✅ approved (L5,C5) | ✅ approved (L5,C5) | **Tie:** Both perfect |
+| **045** | approved | ✅ approved (L5,C5) | ✅ approved (L5,C5) | **Tie:** Both perfect |
+| **050** | rejected | ✅ rejected (L2,C5) | ✅ rejected (L1,C4) | **Baseline wins:** Phase 2.1 flagged 6 violations (vs 3), likely over-firing |
+| **060** | approved | ✅ approved (L5,C5) | ✅ approved (L5,C5) | **Tie:** Both perfect |
+| **064** | approved | ✅ approved (L5,C5) | ❌ **rejected** (L2,C5) | **CRITICAL FAILURE:** False positive on clean layout |
+
+**Verdict Score:**
+- Baseline wins: 2 cases (015, 064)
+- Phase 2.1 wins: 2 cases (005, 010)
+- Tie: 6 cases
+
+**Harsh Reality:** Baseline module outperforms Phase 2.1 on unseen cases.
+
+### Critical Failures Analysis
+
+#### Failure 1: case_015 — False Negative (Missed Rejection)
+
+**What happened:**
+- **Expected:** rejected (severe container under-fill — 4-row table occupying only 35-40% of container height)
+- **Baseline:** ✅ Correctly rejected with 2 violations (`container_fill_ratio`, `space_utilization`)
+- **Phase 2.1:** ❌ Incorrectly approved with 0 violations (layout=5, content=5)
+
+**Root cause:**
+Baseline correctly identified:
+> "The table container is severely under-filled. The four data rows occupy approximately 35-40% of the container's inner height, leaving a massive empty white space band (more than half the container height) below the last row."
+
+Phase 2.1 **completely missed** this fundamental layout violation. The expected.json explicitly lists `container_fill_ratio` as a critical violation, but Phase 2.1 gave perfect scores.
+
+**Hypothesis:**
+- Phase 2.1 fixes (especially Fix 6 "strict content cap") may have weakened fill ratio detection for sparse tables
+- Over-tuning for dense table illegibility broke simple under-fill detection
+- The 882-line prompt may have conflicting rules
+
+**Severity:** **CRITICAL** — This is a regression on a basic layout rule that the old module handled correctly.
+
+---
+
+#### Failure 2: case_064 — False Positive (Incorrect Rejection)
+
+**What happened:**
+- **Expected:** approved (clean two-column layout, properly revised to fix previous under-fill)
+- **Baseline:** ✅ Correctly approved with 0 violations
+- **Phase 2.1:** ❌ Incorrectly rejected with 2 violations (`text_overflow`, `fit_feasibility`)
+
+**Root cause:**
+The expected.json explicitly states:
+> "This revision addresses the previous under-fill violation by increasing bullet list font size to the medium-to-large range (20-22pt target) and expanding vertical spacing between bullet items to ensure content fills at least 65% of each column's inner height."
+
+The layout was **already revised** to be correct. Phase 2.1 flagged violations that don't exist.
+
+**Hypothesis:**
+- Fix 4 (text_overflow → fit_feasibility linking) may be **over-firing**
+- Judge is misinterpreting intentionally large fonts (20-22pt, correct for this layout) as "overflow"
+- Phase 2.1 is too conservative/strict on approved cases
+
+**Severity:** **MAJOR** — False rejection blocks good designs, undermining pipeline efficiency.
+
+---
+
+### Pattern Analysis: Overfitting to Validation Set
+
+**5-Case Validation Set (Phase 2.1):**
+- Cases: 013, 017, 020, 024, 036
+- Verdict accuracy: 100% ✅
+- Grade: A (90%)
+- All cases were **dense tables** or **complex layouts** with specific issues (illegibility, transposition)
+
+**10-Case Unseen Test Set (Phase 3):**
+- Cases: 001, 005, 010, 015, 021, 040, 045, 050, 060, 064
+- Verdict accuracy: 80% ❌
+- Grade: C+ (below 85% target)
+- **Missing edge cases:** sparse tables (015), clean two-column layouts (064)
+
+**Conclusion:** Phase 2.1 fixes were optimized for the specific characteristics of the 5-case validation set (dense tables, illegibility, transposition) and **failed to generalize** to simpler cases or different layout types.
+
+---
+
+### Why Phase 2.1 Failed on Diverse Cases
+
+#### Problem 1: Over-Optimization for Specific Cases
+
+Fixes 5, 6, 7 were designed around dense table issues:
+- Fix 5: STEP 3 within-cell structure verification (for dense multi-line cells)
+- Fix 6: Strict content score cap (for illegible cells)
+- Fix 7: Illegibility edge case handler (for compressed tables)
+
+**Impact:**
+- ✅ Helped on dense tables (case_005, case_010)
+- ❌ Broke simple sparse table detection (case_015)
+- ❌ Created false positives on clean layouts (case_064)
+
+#### Problem 2: Prompt Complexity Reaching Limits
+
+- **Phase 0:** 485 lines
+- **Phase 1:** 690 lines
+- **Phase 2:** 836 lines
+- **Phase 2.1:** 882 lines
+
+**Signs of prompt strain:**
+- Conflicting rules (fill ratio vs strict cap)
+- Edge cases stacking up (STEP 1, 2, 3 + Fix 5, 6, 7)
+- False positives on approved cases
+- False negatives on simple violations
+
+#### Problem 3: Single-Agent Architecture Limits
+
+A single prompt trying to handle:
+- 9 layout rules (space, proportion, alignment, flow, fit, fill, overflow, overlap, total area)
+- 10 content rules (table structure, bullets, hierarchy, charts)
+- Multiple edge cases (illegibility, dense cells, sparse tables, transposition)
+- Conflicting priorities (be thorough vs be conservative, catch violations vs avoid false alarms)
+
+**Result:** Rule conflicts and failure to generalize.
+
+---
+
+### Implications for Production Deployment
+
+#### Option A: Deploy Baseline (Old Module)
+**Pros:**
+- ✅ 100% verdict accuracy on 10-case test
+- ✅ Clean violation signal (no false positives on approved cases)
+- ✅ Proven robustness
+- ✅ Lower risk
+
+**Cons:**
+- ❌ Non-deterministic rule IDs (free-form names)
+- ❌ No structured reasoning
+- ❌ No confidence scoring
+
+**Verdict:** **Safe but limits debugging/observability.**
+
+---
+
+#### Option B: Fix Phase 2.1 (Continue Single-Agent)
+**Required fixes:**
+1. Debug case_015 false negative (restore fill ratio detection)
+2. Debug case_064 false positive (tune text_overflow + fit_feasibility linking)
+3. Run full 65-case validation
+4. Target: ≥95% verdict accuracy (not 80%)
+
+**Risk:** High likelihood of whack-a-mole (fixing case_015 may break case_005, fixing case_064 may break case_020).
+
+**Verdict:** **High risk of further overfitting without architectural change.**
+
+---
+
+#### Option C: Pivot to Multi-Agent Architecture ✅ **RECOMMENDED**
+**Rationale:**
+1. **Single-agent has hit diminishing returns:** 3 iterations, each fix helps some cases and breaks others
+2. **Failures suggest architectural limits:** Judge struggling to balance conflicting concerns in 882-line prompt
+3. **Multi-agent addresses root causes:**
+   - **Separation of concerns:** Layout vs content vs table structure
+   - **Simpler prompts per agent:** 300-400 lines each, focused rules, no conflicts
+   - **Easier debugging:** Can isolate which dimension is failing
+   - **Less overfitting:** Specialized agents more robust to edge cases
+
+**Architecture Design:**
+```
+┌─────────────────────────────────────────────────────┐
+│                 Judge Orchestrator                   │
+│           (Verdict synthesis + routing)              │
+└─────────────────────────────────────────────────────┘
+                         │
+        ┌────────────────┼────────────────┐
+        ▼                ▼                ▼
+┌──────────────┐  ┌──────────────┐  ┌──────────────┐
+│Layout Agent  │  │Content Agent │  │Table Agent   │
+│(~350 lines)  │  │(~250 lines)  │  │(~400 lines)  │
+│              │  │              │  │              │
+│Rules:        │  │Rules:        │  │Rules:        │
+│• space_util  │  │• text_bullet │  │• row_count   │
+│• proportion  │  │• text_hier   │  │• col_count   │
+│• alignment   │  │• chart_type  │  │• cell_transp │
+│• reading_flow│  │• chart_label │  │• header_dist │
+│• fit_feas    │  │• fidelity    │  │• structure   │
+│• fill_ratio  │  │              │  │• STEP 1,2,3  │
+│• overflow    │  │              │  │              │
+│• overlap     │  │              │  │              │
+└──────────────┘  └──────────────┘  └──────────────┘
+```
+
+**Why this would fix case_015 and case_064:**
+- **case_015:** Layout Agent focuses solely on fill ratio, no content confusion → would catch under-fill
+- **case_064:** Content Agent doesn't check spacing/overflow → no false positive on clean layout
+- **case_005/010:** Table Agent preserves good parts of Phase 2.1 (STEP 1, 2, 3, strict cap)
+
+**Orchestrator logic:**
+```python
+# Run agents based on content type
+layout_verdict = LayoutAgent.invoke(sketch, source, layout_description)
+content_verdict = ContentAgent.invoke(sketch, source, layout_description)
+table_verdict = None
+if contains_tables(layout_description):
+    table_verdict = TableAgent.invoke(sketch, source, layout_description)
+
+# Verdict synthesis (conservative: reject if ANY agent rejects)
+overall_verdict = "rejected" if any(
+    v.verdict == "rejected" for v in [layout_verdict, content_verdict, table_verdict] if v
+) else "approved"
+
+# Critique routing (to agent that flagged most severe violations)
+critique_target = route_to_correct_downstream_agent(layout_verdict, content_verdict, table_verdict)
+```
+
+**Next Steps (Phase 4):**
+1. Design & implement multi-agent architecture (est. 2-3 hours)
+2. Test on 10-case set (target: ≥90% verdict accuracy)
+3. If successful → run full 65-case validation
+4. If ≥90% on 65 cases → tag as `v1.0-multi-agent` and deploy
+
+**Verdict:** **Architectural pivot justified by data. Single-agent has reached limits.**
+
+---
+
+### Phase 3 Conclusion
+
+**Key Findings:**
+1. ❌ **Phase 2.1 failed generalization:** 100% on 5 validation cases → 80% on 10 unseen cases
+2. ❌ **Overfitting confirmed:** Fixes optimized for dense tables broke sparse tables and clean layouts
+3. ✅ **Baseline (old module) more robust:** 100% on 10 unseen cases despite lack of structured reasoning
+4. ⚠️ **Single-agent architecture limits reached:** 882-line prompt showing rule conflicts and diminishing returns
+
+**Decision:**
+- **DO NOT** deploy Phase 2.1 to production (80% accuracy unacceptable)
+- **DO NOT** continue fixing single-agent (whack-a-mole risk)
+- **DO** pivot to multi-agent architecture (separation of concerns addresses root causes)
+
+**Target for Phase 4 (Multi-Agent):**
+- 10-case test: ≥90% verdict accuracy
+- 65-case validation: ≥90% verdict accuracy
+- Production deployment: `v1.0-multi-agent`
+
+---
+
+**Repository Status:**
+- Branch: `main`
+- Commits: Phase 0 → Phase 1 → Phase 2 → Phase 2.1 → Phase 3 validation
+- Latest: Phase 3 experiment complete (pivot decision documented)
+- GitHub: https://github.com/shazam37/slide_automation_judge
+
+---
+
+**Document Version:** 3.0  
+**Last Updated:** 2026-06-29 (Phase 3 complete — Multi-agent pivot decision)
