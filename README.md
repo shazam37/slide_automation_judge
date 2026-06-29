@@ -1,219 +1,340 @@
-# Judge Module — Standalone Slide Quality Judge
+# Slide Automation Judge
 
-A self-contained Python module for evaluating slide design quality using a vision LLM.
+**SVG-First Designer Pipeline — Judge Module (Revised)**
 
-The judge receives two PNG images — a rendered slide sketch and the original source slide — and returns a structured verdict: **approved** or **rejected**, with scores, violation details, and an actionable critique.
-
----
-
-## What This Module Does
-
-The judge evaluates two dimensions:
-
-1. **Layout quality** — space utilization, alignment, container proportions, text fill ratio, overlap detection
-2. **Content fidelity** — are all data rows, bullet points, and chart elements present and correctly placed?
-
-When a slide is rejected, the judge identifies which part of the pipeline caused the issue and provides a specific critique.
-
----
-
-## Setup
-
-### 1. Install dependencies
-
-```bash
-pip install -r judge_module/requirements.txt
-```
-
-### 2. Configure your LLM provider
-
-The judge uses a vision-capable LLM (Claude Sonnet recommended). Set one of:
-
-**Option A — Anthropic direct API:**
-```bash
-export ANTHROPIC_API_KEY=sk-ant-...
-```
-
-**Option B — AWS Bedrock:**
-```bash
-export AWS_DEFAULT_REGION=us-east-1
-# Configure AWS credentials via ~/.aws/credentials or IAM role
-```
-
-### 3. (Optional) Enable LangSmith tracing
-
-```bash
-export LANGSMITH_API_KEY=ls__...
-export LANGSMITH_PROJECT=judge-module
-```
+A production-ready judge agent that evaluates rendered slide sketches for layout quality and content fidelity, providing structured feedback for the SVG-First Designer pipeline.
 
 ---
 
 ## Quick Start
 
-### Judge a single slide pair
-
 ```bash
-python judge_module/run_judge.py --sketch sketch.png --source source.png
-```
+# Install dependencies
+pip install -r requirements.txt
 
-With layout context:
-```bash
-python judge_module/run_judge.py \
-    --sketch sketch.png \
-    --source source.png \
-    --layout-description "Two-column layout: bullet list on left, table on right."
-```
+# Run single evaluation
+python run_judge.py judge \
+  --sketch tests/golden_tests/case_000/sketch.png \
+  --source tests/golden_tests/case_000/source.png
 
-### Run the evaluation harness
-
-```bash
-python judge_module/run_judge.py --evaluate --golden-dir judge_module/tests/golden_tests
-```
-
-Save detailed results:
-```bash
-python judge_module/run_judge.py --evaluate --output results.json
+# Run full golden test suite
+python run_judge.py evaluate --golden-dir tests/golden_tests
 ```
 
 ---
 
-## Python API
+## What This Does
 
+The Judge evaluates slide sketches against source slides on two dimensions:
+
+### 1. Layout Quality (score 1-5)
+- Space utilization (≥80% coverage)
+- Proportion balance
+- Alignment & grid snap
+- Reading flow
+- Container fill ratios
+- Text overflow detection
+- Overlap validation
+
+### 2. Content Fidelity (score 1-5)
+- Table row/column counts
+- Cell placement verification (no transposition)
+- Text bullet counts
+- Content hierarchy preservation
+- Chart type correctness
+
+**Verdict:** `approved` (pass to next stage) or `rejected` (route critique back to sub-agent)
+
+---
+
+## Project Status
+
+| Branch | Status | Description |
+|--------|--------|-------------|
+| `main` | 🟢 Active | Phase 2: Analysis accuracy improvements |
+| `arch/split-agent` | 🔵 Planned | Multi-agent architecture (LayoutJudge + ContentJudge) |
+
+### Current Performance (Phase 2)
+- **Verdict Accuracy:** 5/5 (100%) on 5-case test set
+- **Analysis Accuracy:** Testing in progress
+- **Target:** ≥85% violation detection, ≥80% score accuracy
+
+See [Progress_documentation.md](Progress_documentation.md) for full revision history.
+
+---
+
+## Key Features
+
+✅ **Deterministic Rule IDs** — 20 fixed rules, no free-form violations  
+✅ **Structured Reasoning** — Chain-of-thought analysis (Part A + Part B)  
+✅ **Confidence Scoring** — 0.0-1.0 scale for borderline cases  
+✅ **Cell-Level Verification** — Detects merged cells and transposition  
+✅ **Editorial Markup Ignored** — Annotation boxes don't trigger false positives  
+✅ **65 Golden Test Cases** — Comprehensive test coverage  
+
+---
+
+## Architecture
+
+```
+SVGJudgeAgent
+├── Input: sketch PNG + source PNG + layout description
+├── Structured Reasoning (Part A + Part B)
+│   ├── Part A: Systematic rule walkthrough (layout + content)
+│   └── Part B: Adversarial double-check (blind spots)
+├── Violations: List of rule breaches with severity
+├── Scores: layout_score (1-5) + content_fidelity_score (1-5)
+├── Verdict: approved / rejected (based on threshold)
+└── Critique: Routed to layout_planner | css_layout_agent | svg_sketcher
+```
+
+**LLM:** Claude Sonnet 4.5 via AWS Bedrock  
+**Framework:** LangChain + trustcall (structured output)  
+**Max Retries:** 3 attempts per sketch  
+
+---
+
+## Rule Taxonomy
+
+### Layout Rules (9)
+- `space_utilization` — Containers cover ≥80% of slide
+- `proportion_balance` — Container sizes match content volume
+- `alignment` — Edges align to consistent grid
+- `reading_flow` — L→R, T→B natural order
+- `fit_feasibility` — Content plausibly fits in container
+- `text_fill_ratio_critical` — TEXT containers <40% filled
+- `text_fill_ratio_major` — TEXT containers 40-65% filled
+- `text_overflow` — Text clipped or illegible
+- `overlap` — Content containers intersect
+- `total_content_area` — Total coverage <60% of slide
+
+### Content Fidelity Rules (10)
+- `table_row_count` — Missing rows
+- `table_column_count` — Missing columns
+- `table_cell_transposition` — Data in wrong columns/rows
+- `table_header_distinction` — Headers not distinguished
+- `text_bullet_count` — Missing bullet points
+- `text_hierarchy` — Heading levels not preserved
+- `chart_type` — Wrong chart type used
+- `chart_labels` — Missing axis labels or series names
+- `mixed_elements_node_count` — Missing nodes (≥50% threshold)
+- `image_placeholder` — Image placeholder missing
+
+---
+
+## Repository Structure
+
+```
+.
+├── judge_agent.py              # Core agent (system prompt + structured output)
+├── judge_config.py             # Configuration (model, thresholds)
+├── judge_evaluator.py          # Batch evaluation runner
+├── run_judge.py                # CLI entry point
+├── tests/
+│   ├── golden_tests/           # 65 test cases (case_000 - case_064)
+│   │   ├── case_000/
+│   │   │   ├── sketch.png      # Rendered SVG sketch
+│   │   │   ├── source.png      # Source slide for comparison
+│   │   │   ├── expected.json   # Expected verdict + violations
+│   │   │   └── metadata.json   # Test case metadata
+│   │   └── ...
+│   └── test_judge_rules.py
+├── results/                    # Auto-saved results per case
+│   ├── case_000/
+│   │   └── 20260629_120000_v2_sonnet45.json
+│   └── ...
+├── Progress_documentation.md   # Full revision history
+├── README.md                   # This file
+└── requirements.txt
+```
+
+---
+
+## Usage Examples
+
+### Single Case Evaluation
+```bash
+python run_judge.py judge \
+  --sketch tests/golden_tests/case_020/sketch.png \
+  --source tests/golden_tests/case_020/source.png
+```
+
+Output saved to `results/case_020/YYYYMMDD_HHMMSS_v2_sonnet45.json`
+
+### Batch Evaluation
+```bash
+python run_judge.py evaluate \
+  --golden-dir tests/golden_tests \
+  --output results/batch_eval_20260629.json
+```
+
+Generates summary report with pass/fail counts and per-case details.
+
+### Programmatic Usage
 ```python
-from langchain_anthropic import ChatAnthropic
-from judge_module import SVGJudgeAgent, SVGJudgeConfig, SVGJudgeInput, SVGJudgePrompts
+from judge_agent import SVGJudgeAgent, SVGJudgeInput, SVGJudgeConfig
+from langchain_aws import ChatBedrockConverse
 
-# 1. Create the LLM
-llm = ChatAnthropic(model="claude-sonnet-4-5", temperature=0, max_tokens=4096)
-
-# 2. Create the agent
-agent = SVGJudgeAgent(
-    prompts=SVGJudgePrompts(),
-    config=SVGJudgeConfig(llm=llm),
+llm = ChatBedrockConverse(
+    model="us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+    region_name="us-east-1",
+    temperature=0,
+    max_tokens=4096
 )
 
-# 3. Invoke with base64 PNG data-URIs
-import base64
-from pathlib import Path
-
-def load_png(path):
-    data = Path(path).read_bytes()
-    return f"data:image/png;base64,{base64.b64encode(data).decode()}"
+agent = SVGJudgeAgent(config=SVGJudgeConfig(llm=llm))
 
 result = agent.invoke(SVGJudgeInput(
-    sketch_png=load_png("sketch.png"),
-    source_png=load_png("source.png"),
-    layout_description="Two-column layout with a table on the right.",
+    sketch_png="data:image/png;base64,...",
+    source_png="data:image/png;base64,...",
+    layout_description="Two-column layout with table on right."
 ))
 
-print(result.verdict)                  # "approved" or "rejected"
-print(result.layout_score)             # 1–5
-print(result.content_fidelity_score)   # 1–5
-print(result.critique)                 # actionable critique when rejected
-print(result.critique_target)          # "layout_planner" | "css_layout_agent" | "svg_sketcher"
-
-for v in result.violations:
-    print(f"[{v.severity}] {v.rule}: {v.description}")
+print(result.verdict)         # "approved" or "rejected"
+print(result.layout_score)    # 1-5
+print(result.violations)      # List of violations
 ```
 
 ---
 
-## Module Structure
+## Testing Strategy
 
-```
-judge_module/
-├── __init__.py             — public API exports
-├── judge_agent.py          — SVGJudgeAgent (LLM agent, prompts, schemas)
-├── judge_rules.py          — Rule definitions (IDs, severities, container types)
-├── judge_evaluator.py      — Evaluation harness (golden test runner)
-├── judge_config.py         — Configurable thresholds (max_major_violations, etc.)
-├── run_judge.py            — CLI entry point
-├── requirements.txt        — Minimal dependencies
-└── tests/
-    ├── __init__.py
-    ├── test_judge_rules.py — Unit tests (no LLM required)
-    └── golden_tests/
-        ├── README.md       — How to add golden test cases
-        └── case_NNN_*/     — Test case directories (add your own)
-```
-
----
-
-## Running Tests
-
-Unit tests (no LLM required):
+### 5-Case Quick Test (Primary)
 ```bash
-python -m pytest judge_module/tests/test_judge_rules.py -v
+# Diverse test set covering different design types
+for case in case_013 case_017 case_020 case_024 case_036; do
+  python run_judge.py judge \
+    --sketch tests/golden_tests/$case/sketch.png \
+    --source tests/golden_tests/$case/source.png
+done
+```
+
+- **case_013:** Two-column text (annotation boxes)
+- **case_017:** Four-column comparison table (dense)
+- **case_020:** Two data tables (transposition, missing row)
+- **case_024:** Table + callout + chart (truncation)
+- **case_036:** Full-width workstream table (overflow)
+
+### Full 65-Case Suite
+```bash
+python run_judge.py evaluate --golden-dir tests/golden_tests
+```
+
+**Test case breakdown:**
+- 13 original cases (case_000 - case_012)
+- 52 production dataset cases (case_013 - case_064)
+
+---
+
+## Environment Setup
+
+### Required Environment Variables
+```bash
+export AWS_BEARER_TOKEN_BEDROCK="<your-token>"
+export AWS_DEFAULT_REGION="us-east-1"
+```
+
+These must be set in every terminal session before running the judge.
+
+### Python Dependencies
+```
+langchain-core>=0.3.0
+langchain-aws>=0.2.0
+trustcall>=0.2.0
+pydantic>=2.0
+pillow>=10.0
+boto3>=1.34.0
 ```
 
 ---
 
-## Customising the Judge
+## Revision History
 
-### Override the system prompt
+### Phase 2 (2026-06-29) — Current
+**Focus:** Analysis accuracy improvements
 
-```python
-from judge_module import SVGJudgePrompts
+**Changes:**
+- Cell-level spot-checks (detect merged cells, transposition)
+- Physical row counting (don't rely on layout description)
+- Content score cap when cells illegible (score=3, not 5)
+- Link text_overflow to fit_feasibility
 
-custom_prompts = SVGJudgePrompts(
-    system_instruction="Your custom system prompt here...",
-)
-agent = SVGJudgeAgent(prompts=custom_prompts, config=SVGJudgeConfig(llm=llm))
-```
+**Expected:** 85%+ violation detection, 80%+ score accuracy
 
-### Adjust approval thresholds
+### Phase 1 (2026-06-29)
+**Focus:** Bug fixes from initial revision
 
-```python
-from judge_module.judge_config import JudgeThresholds
+**Changes:**
+- Fixed annotation box false positives (ignore editorial markup)
+- Restored content fidelity rules for tables
+- Simplified Devil's advocate check (60 → 20 lines)
 
-thresholds = JudgeThresholds(
-    max_major_violations=1,   # stricter: only 1 major violation allowed
-    min_layout_score=4,       # stricter: layout score must be >= 4
-    min_content_fidelity_score=4,
-)
+**Results:** 100% verdict accuracy, 70% overall (C grade)
 
-# Use thresholds to re-evaluate an existing output
-approved = thresholds.is_approved(
-    layout_score=result.layout_score,
-    content_fidelity_score=result.content_fidelity_score,
-    critical_count=sum(1 for v in result.violations if v.severity == "critical"),
-    major_count=sum(1 for v in result.violations if v.severity == "major"),
-)
-```
+### Phase 0 (2026-06-23)
+**Focus:** Add deterministic structure
 
----
+**Changes:**
+- Fixed 20-rule taxonomy
+- Structured reasoning field (Part A + Part B)
+- Confidence scoring
+- Expanded prompt 485 → 859 lines
 
-## Getting PNG Pairs from LangSmith
-
-To build the golden test dataset, export `(sketch.png, source.png)` pairs from LangSmith:
-
-1. Open a LangSmith trace for a `SVGJudgeAgent` run
-2. Find the `sketch_png` and `source_png` input fields (base64 data-URIs)
-3. Decode and save as PNG files:
-
-```python
-import base64, re
-from pathlib import Path
-
-def save_data_uri(data_uri: str, output_path: str):
-    # Strip the "data:image/png;base64," prefix
-    b64 = re.sub(r"^data:image/\w+;base64,", "", data_uri)
-    Path(output_path).write_bytes(base64.b64decode(b64))
-
-save_data_uri(sketch_png_from_langsmith, "case_001/sketch.png")
-save_data_uri(source_png_from_langsmith, "case_001/source.png")
-```
-
-4. Visually inspect the pair and write `expected.json` with the correct verdict
-5. See `judge_module/tests/golden_tests/README.md` for the full format
+**Results:** 40% accuracy (regression due to 3 bugs)
 
 ---
 
-## Three-Week Development Plan
+## Roadmap
 
-| Week | Focus | Goal |
-|------|-------|------|
-| **Week 1** | Setup + data preparation | Module running, 20+ golden test cases collected |
-| **Week 2** | Prompt improvement + evaluation | Judge accuracy ≥ 80% on golden test set |
-| **Week 3** | Finalization + configurable thresholds | Final evaluation run, documentation complete |
+### Near-Term (Phase 2 Testing)
+- [ ] Re-run 5-case test set with Phase 2 fixes
+- [ ] Achieve ≥85% analysis accuracy
+- [ ] Document test results in Progress_documentation.md
+- [ ] Tag as `v0.3-analysis-improvements`
+
+### Medium-Term (Split-Agent Architecture)
+- [ ] Create `arch/split-agent` branch
+- [ ] Implement LayoutJudge (300-line prompt)
+- [ ] Implement ContentJudge (300-line prompt)
+- [ ] Implement Coordinator (aggregation + verdict logic)
+- [ ] Parallel execution (30% faster)
+- [ ] Compare single-agent vs split-agent performance
+- [ ] Merge winner to `main`, tag as `v2.0`
+
+### Long-Term
+- [ ] Add ChartJudge (specialized chart evaluation)
+- [ ] Add TextJudge (specialized text fidelity)
+- [ ] Multi-language support (non-English slides)
+- [ ] Real-time feedback streaming
+- [ ] Integration with full SVG-First Designer pipeline
+
+---
+
+## Contributing
+
+This is an internal research project. External contributions are not currently accepted.
+
+For questions or feedback:
+- **Owner:** shazam37
+- **Repository:** https://github.com/shazam37/slide_automation_judge
+
+---
+
+## License
+
+Proprietary — Internal use only.
+
+---
+
+## Acknowledgments
+
+- **Claude Sonnet 4.5** — LLM judge model
+- **AWS Bedrock** — Model hosting
+- **LangChain** — Agent framework
+- **trustcall** — Structured output validation
+
+---
+
+**Last Updated:** 2026-06-29  
+**Version:** Phase 2 (Analysis Improvements)  
+**Status:** 🟡 Testing in progress
