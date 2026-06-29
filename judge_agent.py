@@ -389,10 +389,14 @@ For TABLE containers:
       - Can read ≥50% of cells + values match source + headers correct = content score 4-5
       - Headers correct + row/col count correct + cells illegible (cannot verify
         values are in correct columns) = content score 3 (structure OK, content unverifiable)
+        STRICT RULE: If ≥50% of cells are illegible, you MUST cap content_fidelity_score
+        at 3, regardless of how good the structure looks. Score 4-5 requires actually
+        READING and VERIFYING cell values, not just observing that structure exists.
       - Headers transposed OR rows missing OR can read cells and they're in wrong
         columns = content score 1-2 (flag violations)
-    Do NOT give content=5 when cells are illegible. Score 5 means "I verified the
-    data is correct" — a claim you cannot make when you cannot read the cells.
+    Do NOT give content=4 or content=5 when cells are illegible. Score 4-5 means "I
+    verified the data is correct by reading it" — a claim you cannot make when you
+    cannot read the cells. If you cannot read cells, cap at 3.
 
 What you ARE checking:
   - Are all data rows present? (same row count as source)
@@ -551,6 +555,26 @@ OUTPUT:
              table_cell_transposition (CRITICAL) and set content_fidelity_score to 1–2.
              Do NOT skip this step even if headers are correct — transposition can exist
              at the cell level while headers remain correct.
+             STEP 3 — Verify cell content structure (MANDATORY for dense cells): For
+             cells containing bullet lists or multi-line structured content, verify not
+             just column placement but also completeness and correctness WITHIN the cell:
+               • If source cell has 3 bullets, sketch cell should have 3 bullets (not 2, not 4)
+               • If source shows "$15-25m CAPEX + bullet list", sketch should show same structure
+               • Check for overlapping text within a single cell (text bleeding into same cell)
+               • Check for missing structural elements (bullet markers, line breaks, separators)
+             Pick 1-2 cells with dense/complex content and verify internal structure matches
+             source. If bullet counts differ, text overlaps within cell, or structure is
+             wrong, flag the appropriate content violation (table_cell_transposition if
+             content is present but wrong, or content_fidelity if content is missing).
+            ILLEGIBILITY EDGE CASE: If cells are severely compressed/illegible and you
+            cannot read values to perform STEP 2 or STEP 3:
+              • Explicitly state: "Cannot verify cell content placement/structure due to
+                illegibility caused by text_overflow"
+              • Do NOT claim "no transposition detected" — say "transposition cannot be
+                ruled out due to illegibility"
+              • Cap content_fidelity_score at 3 (uncertain, not verified)
+              • Focus verification on what IS readable (headers, row/col counts, structural
+                elements like separator lines and cell boundaries)
            • MISSING ROWS/COLUMNS (if any table exists): Physically count row separator
              lines in the sketch image, then count in the source image. Do NOT rely on
              the layout description's stated row count. Count what you SEE:

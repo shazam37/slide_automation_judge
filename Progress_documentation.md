@@ -4,7 +4,7 @@
 **Owner:** shazam37  
 **Repository:** git@github.com:shazam37/slide_automation_judge.git  
 **Started:** 2026-06-23  
-**Last Updated:** 2026-06-29  
+**Last Updated:** 2026-06-29 (Phase 2.1 - Round 3 fixes applied)  
 
 ---
 
@@ -371,7 +371,142 @@ File size: 836 lines (unchanged, replaced text with same length guidance).
 | 036 | Content score | 5 | 3 (illegible = uncertain) |
 
 #### Status:
-🟡 **PENDING TEST** — User will re-run 5 cases and report results.
+✅ **COMPLETE** — Phase 2 test results received 2026-06-29
+
+#### Test Results (First Iteration):
+
+**Performance Achieved:**
+- Verdict accuracy: **5/5 (100%)** ✅ Maintained
+- Analysis accuracy: **4/5 (80%)** ✅ Major improvement (+40% from Phase 1)
+- Violation detection: **9/15 (60%)** ✅ Tripled from Phase 1's 20%
+- Content score accuracy: **4/5 (80%)** ✅ Doubled from Phase 1's 40%
+
+**Case-by-Case Results:**
+
+| Case | Verdict | Violations Caught | Layout Score | Content Score | Analysis Quality |
+|------|---------|-------------------|--------------|---------------|------------------|
+| 013 | ✅ approved | 0/0 (100%) | 5 ✅ | 5 ✅ | Perfect |
+| 017 | ✅ approved | 0/0 (100%) | 5 ✅ | 5 ✅ | Perfect |
+| 020 | ✅ rejected | 3/4 (75%) | 1 ✅ | 1 ✅ | Good |
+| 024 | ✅ rejected | 2/3 (67%) | 2 ✅ | 4 ❌ | Issues |
+| 036 | ✅ rejected | 2/5 (40%) | 1 ✅ | 4 ❌ | Acceptable |
+
+**What Worked ✅:**
+
+1. **Fix 1 (Cell-level spot-checks):** Working on case_020
+   - Successfully detected merged cells: "129 2", "543 8", "366 3", "104 7"
+   - Correctly identified: "McGill row: Mar value '8' appears in Feb column"
+   
+2. **Fix 4 (text_overflow → fit_feasibility):** Working perfectly
+   - case_024: Linked text truncation to container size ✅
+   - case_036: Linked timeline overflow to cell dimensions ✅
+
+3. **Fix 2 (Physical row counting):** Working as designed
+   - Correctly counted visual rows in all tables
+
+4. **Fix 3 (Content score cap):** Partially working
+   - case_020: Correctly gave score=1 when transposed ✅
+   - case_036: Improved from 5→4, but should be 3 ❌
+
+**Remaining Gaps ⚠️:**
+
+1. **Within-cell content verification (case_024)**
+   - Issue: Caught column placement, missed content structure errors within cells
+   - Example: ADMS 3.0 Value cell has overlapping text, missing bullet list structure
+   - Root cause: STEP 2 verifies "Is X in column Y?" but not "Is X structurally correct within cell Y?"
+
+2. **Content score cap not strict enough (case_036)**
+   - Issue: Gave score=4 when illegible, rule says cap at 3
+   - Root cause: Judge weighted readable metadata columns higher than illegible timeline columns
+   - Rule needs stricter enforcement: "≥50% illegible → score=3, no exceptions"
+
+3. **Illegibility blocks transposition detection (case_036)**
+   - Issue: Can't read cell values → can't verify placement → falls back to structure-only
+   - Judge claimed "No transposition detected" when should say "Cannot rule out transposition"
+
+**Next Steps:**
+Apply 3 targeted fixes (Round 3) to address remaining gaps. Target: 90%+ analysis accuracy.
+
+---
+
+### Phase 2.1: Targeted Improvements (Round 3)
+
+**Date:** 2026-06-29  
+**Goal:** Close remaining 3 gaps to reach 85%+ analysis accuracy  
+**Branch:** `main` (current)  
+**Commit:** "Add within-cell structure verification, strict illegibility cap, edge case handling"
+
+#### Changes Made:
+
+**Fix 5: Within-Cell Content Structure Verification (Lines 569-577)**
+```diff
++ STEP 3 — Verify cell content structure (MANDATORY for dense cells): For
++ cells containing bullet lists or multi-line structured content, verify not
++ just column placement but also completeness and correctness WITHIN the cell:
++   • If source cell has 3 bullets, sketch cell should have 3 bullets (not 2, not 4)
++   • If source shows "$15-25m CAPEX + bullet list", sketch should show same structure
++   • Check for overlapping text within a single cell (text bleeding into same cell)
++   • Check for missing structural elements (bullet markers, line breaks, separators)
++ Pick 1-2 cells with dense/complex content and verify internal structure matches
++ source. If bullet counts differ, text overlaps within cell, or structure is
++ wrong, flag the appropriate content violation (table_cell_transposition if
++ content is present but wrong, or content_fidelity if content is missing).
+```
+
+**Rationale:** STEP 2 catches inter-column transposition (content in wrong column). STEP 3 catches intra-cell errors (content in right column but wrong structure). This is case-agnostic because dense cells with bullet lists appear across many table types (project plans, comparison tables, financial tables).
+
+**Fix 6: Strict Content Score Cap When Illegible (Lines 388-400)**
+```diff
+  Score based on what you CAN verify by READING cell values:
+    - Can read ≥50% of cells + values match source + headers correct = content score 4-5
+    - Headers correct + row/col count correct + cells illegible (cannot verify
+      values are in correct columns) = content score 3 (structure OK, content unverifiable)
++     STRICT RULE: If ≥50% of cells are illegible, you MUST cap content_fidelity_score
++     at 3, regardless of how good the structure looks. Score 4-5 requires actually
++     READING and VERIFYING cell values, not just observing that structure exists.
+    - Headers transposed OR rows missing OR can read cells and they're in wrong
+      columns = content score 1-2 (flag violations)
+- Do NOT give content=5 when cells are illegible. Score 5 means "I verified the
+- data is correct" — a claim you cannot make when you cannot read the cells.
++ Do NOT give content=4 or content=5 when cells are illegible. Score 4-5 means "I
++ verified the data is correct by reading it" — a claim you cannot make when you
++ cannot read the cells. If you cannot read cells, cap at 3.
+```
+
+**Rationale:** Makes the cap rule explicit and mandatory. Emphasizes that score 4-5 requires actual reading, not just structural observation. Case-agnostic: applies to any table where cells are compressed/illegible due to rendering issues.
+
+**Fix 7: Illegibility Edge Case Handling (Lines 578-586)**
+```diff
++ ILLEGIBILITY EDGE CASE: If cells are severely compressed/illegible and you
++ cannot read values to perform STEP 2 or STEP 3:
++   • Explicitly state: "Cannot verify cell content placement/structure due to
++     illegibility caused by text_overflow"
++   • Do NOT claim "no transposition detected" — say "transposition cannot be
++     ruled out due to illegibility"
++   • Cap content_fidelity_score at 3 (uncertain, not verified)
++   • Focus verification on what IS readable (headers, row/col counts, structural
++     elements like separator lines and cell boundaries)
+```
+
+**Rationale:** Prevents judge from making unwarranted claims when evidence is unavailable. Case-agnostic: applies whenever rendering failures prevent content verification, regardless of table type or violation pattern.
+
+File size: **882 lines** (+46 lines from Phase 2's 836 lines).
+
+#### Expected Results:
+
+**Performance Targets:**
+- Verdict accuracy: maintain 5/5 (100%) ✅
+- Violation detection: improve from 9/15 to 11+/15 (60% → 75%+)
+- Content score accuracy: improve from 4/5 to 5/5 (80% → 100%)
+- Analysis accuracy: improve from 4/5 to 4.5-5/5 (80% → 90%+)
+
+**Specific Case Expectations:**
+- **case_024:** STEP 3 should catch ADMS 3.0 Value cell structure error → content score 4→2
+- **case_036:** Strict cap should enforce content score 4→3 when timeline cells illegible
+- **case_036:** Illegibility handler should prevent false "no transposition" claim
+
+#### Status:
+🟡 **PENDING TEST** — User will re-run 5 cases with Phase 2.1 fixes applied.
 
 ---
 
@@ -384,7 +519,8 @@ File size: 836 lines (unchanged, replaced text with same length guidance).
 | **Baseline (Old Judge)** | 5/5 (100%) | 5/5 (100%) | ~15/15 (100%) | Excellent | **A+ (98%)** |
 | **Phase 0: Initial Revision** | 2/5 (40%) | 3/5 (60%) | ~3/15 (20%) | Poor | **F (40%)** |
 | **Phase 1: Bug Fixes** | 5/5 (100%) | 3/5 (60%) | ~3/15 (20%) | Fair | **C (70%)** |
-| **Phase 2: Analysis Fixes** | TBD | TBD | TBD | TBD | TBD |
+| **Phase 2: Analysis Fixes (First Test)** | 5/5 (100%) | 4/5 (80%) | 9/15 (60%) | Good | **B (80%)** |
+| **Phase 2.1: Targeted Improvements** | TBD | TBD | TBD | TBD | TBD |
 | **Target** | 5/5 (100%) | 5/5 (100%) | 13+/15 (85%+) | Very Good | **A (90%+)** |
 
 ### Detailed Breakdown by Case (Phase 1 → Phase 2)
@@ -693,4 +829,4 @@ Refs: case_020, case_024
 ---
 
 **Document Version:** 1.0  
-**Last Updated:** 2026-06-29 12:00 IST
+**Last Updated:** 2026-06-29 (Phase 2.1 - Round 3 fixes applied) 12:00 IST
