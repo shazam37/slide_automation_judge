@@ -1,0 +1,88 @@
+python run_judge.py evaluate \
+  --golden-dir tests/phase3_10cases \
+  --prompt-version v2.1 \
+  --model us.anthropic.claude-sonnet-4-5-20250929-v1:0 \
+  --output results/phase3_sonnet45_10cases.json
+/home/shazam/.local/lib/python3.14/site-packages/requests/__init__.py:113: RequestsDependencyWarning: urllib3 (2.7.0) or chardet (7.4.3)/charset_normalizer (3.4.4) doesn't match a supported version!
+  warnings.warn(
+Using AWS Bedrock (us.anthropic.claude-sonnet-4-5-20250929-v1:0, region=us-east-1)
+
+Running evaluation on: tests/phase3_10cases
+Prompt version:        v2.1
+
+Overriding LLM verdict 'rejected' → 'approved' (criticals=0, majors=2, layout_score=3, content_fidelity_score=5)
+======================================================================
+SVG Judge Evaluation Report  [prompt_version=v2.1]
+======================================================================
+Total cases:          10
+  True positives:     4  (correctly rejected)
+  True negatives:     4  (correctly approved)
+  False positives:    1  (wrongly rejected — over-rejection)
+  False negatives:    1  (missed flaws — under-detection)
+  Errors:             0
+
+Verdict-level metrics:
+  Accuracy:           80.0%
+  Precision:          80.0%  (of rejections, how many were right?)
+  Recall:             80.0%  (of flawed slides, how many caught?)
+  F1 Score:           80.0%
+  False positive rate:20.0%  (approved-but-rejected)
+  False negative rate:20.0%  (rejected-but-approved)
+
+Rules over-firing (caused over-rejections — tighten prompt description):
+  text_overflow                             1x
+  fit_feasibility                           1x
+
+Rules under-firing (missed in flawed slides — strengthen prompt description):
+  container_fill_ratio                      1x
+  space_utilization                         1x
+
+Rule                                         TP   FP   FN   Prec    Rec
+----------------------------------------------------------------------
+  alignment                                   0    0    1    0%    0%
+  container_fill_ratio                        0    0    3    0%    0%
+  content_fidelity_cell_placement             0    0    1    0%    0%
+  content_fidelity_table_rows                 0    0    1    0%    0%
+  content_fidelity_table_structure            0    0    3    0%    0%
+  fit_feasibility                             2    1    0   67%  100%
+  overlap_validity                            0    0    1    0%    0%
+  space_utilization                           2    0    1  100%   67%
+  table_cell_transposition                    0    1    0    0%    0%
+  table_column_count                          0    1    0    0%    0%
+  text_fill_ratio_critical                    0    1    0    0%    0%
+  text_overflow                               1    2    0   33%  100%
+
+Per-case results:
+  case_001                   expected=approved  actual=approved  ✅
+  case_005                   expected=rejected  actual=rejected  ✅
+  case_010                   expected=rejected  actual=rejected  ✅
+  case_015                   expected=rejected  actual=approved  ❌ FN (missed flaw)
+    layout_score=5  content_fidelity_score=5  confidence=1.00
+    Violations: none reported
+  case_021                   expected=rejected  actual=rejected  ✅
+  case_040                   expected=approved  actual=approved  ✅
+  case_045                   expected=approved  actual=approved  ✅
+  case_050                   expected=rejected  actual=rejected  ✅
+  case_060                   expected=approved  actual=approved  ✅
+  case_064                   expected=approved  actual=rejected  ❌ FP (over-rejected)
+    layout_score=2  content_fidelity_score=5  confidence=1.00
+    Violations (2):
+      [CRITICAL] text_overflow [C0]: C0 (Technology Platform left column): The last two bullet items ('Investigation workbench' and 'Dashboards & analytics') are visibly clipped at the bottom edge of the container. Text overflows the container boundary, making the last two bullets partially illegible.
+      [CRITICAL] fit_feasibility [C0]: C0 (Technology Platform left column): Container dimensions are insufficient for the described content volume. The layout description specifies 6 bullet items rendered at 20-22pt font size to fill at least 65% of container height, but this font size causes the last two bullets to overflow the container. The container is too small to accommodate all 6 bullets at the specified font size without clipping.
+    Critique (→ css_layout_agent):
+      C0 (Technology Platform left column) has two critical layout violations that must be fixed:
+      
+      1. TEXT OVERFLOW: The last two bullets ('Investigation workbench' and 'Dashboards & analytics') are visibly clipped at the bottom edge of the container. All 6 bullets must be fully visible and legible within the container boundaries.
+      
+      2. FIT FEASIBILITY: The container height is insufficient for 6 bullet items at the specified 20-22pt font size. The layout description mandates this font size to achieve 65% fill ratio, but the current container dimensions cannot accommodate all content at this size without clipping.
+      
+      REQUIRED CHANGES:
+      - Increase the height of C0 to accommodate all 6 bullets at 20-22pt font size without clipping. Calculate the required height based on: (6 bullets × line height) + (icon badge height) + (header height) + (subtitle height) + (vertical spacing between elements) + (top and bottom padding).
+      - Ensure the bottom edge of C0 aligns with the bottom edge of C1 (right column) to maintain horizontal row alignment between the two equal-peer columns.
+      - Verify that increasing C0 height does not cause overlap with C2 (footer bar). If necessary, adjust the vertical position of C2 downward to maintain the visible gap between the columns and the footer.
+      - After adjusting C0 height, confirm that all 6 bullets are fully visible and legible, with no clipping at the bottom edge.
+======================================================================
+Per-case results saved → results/ (10 files)
+
+Detailed results saved to: results/phase3_sonnet45_10cases.json
+
